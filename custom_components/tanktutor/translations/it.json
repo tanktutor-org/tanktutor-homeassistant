@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Collega una vasca a TankTutor",
-        "description": "Crea una chiave device per la vasca in TankTutor (pagina della vasca, «Chiavi device») e incollala qui. Usa l'indirizzo di staging solo per le prove.",
+        "description": "Crea una chiave device per la vasca in TankTutor (pagina della vasca, «Chiavi device») e incollala qui.",
         "data": {
           "url": "Indirizzo dell'API",
           "key": "Chiave device"
