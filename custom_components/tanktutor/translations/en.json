@@ -1,0 +1,37 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect a tank to TankTutor",
+        "description": "Create a device key for the tank in TankTutor (tank page, \"Device keys\") and paste it here. Use the staging URL only for tests.",
+        "data": { "url": "API address", "key": "Device key" },
+        "data_description": {
+          "url": "Where TankTutor's API lives, ending with /api.",
+          "key": "Starts with ttk_. It is shown only once, when you create it."
+        }
+      },
+      "reauth_confirm": {
+        "title": "TankTutor rejected the device key",
+        "description": "The key was revoked or is no longer valid. Create a new one in TankTutor and paste it here.",
+        "data": { "key": "Device key" }
+      }
+    },
+    "error": {
+      "invalid_url": "The address must start with https:// (or http:// for a local test).",
+      "invalid_key": "That does not look like a TankTutor device key (it starts with ttk_)."
+    },
+    "abort": {
+      "already_configured": "This device key is already set up.",
+      "reauth_successful": "The new device key was saved."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Sensors to send to TankTutor",
+        "description": "Only the sensors you choose here are sent. Nothing else leaves Home Assistant.",
+        "data": { "temperature_entity": "Water temperature sensor" }
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "domain": "tanktutor",
+  "name": "TankTutor",
+  "codeowners": ["@tanktutor-org"],
+  "config_flow": true,
+  "documentation": "https://github.com/tanktutor-org/tanktutor-homeassistant",
+  "integration_type": "service",
+  "iot_class": "cloud_push",
+  "issue_tracker": "https://github.com/tanktutor-org/tanktutor-homeassistant/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}
