@@ -16,7 +16,7 @@ EVENT_NAME_RE = re.compile(r"^[a-z0-9_]{1,40}$")
 SALINITY_UNITS = ("ppt", "SG")
 AMMONIA_BASES = ("free", "total")
 
-# The web app proxies the API under /api; staging is https://tanktutor-stag.bitsofdream.it/api
+# The web app proxies the API under /api.
 DEFAULT_URL = "https://tanktutor.org/api"
 
 STORAGE_VERSION = 1

@@ -15,7 +15,7 @@ total) and on/off events (leak, level, your own names, optional inversion). It s
 persistent queue, the 5-minute rate limit, `429`/`401`/`403`/`5xx` handling and reauth.
 Details and rules: [docs/spec.md](docs/spec.md).
 
-- API address: `https://tanktutor.org/api` (staging: `https://tanktutor-stag.bitsofdream.it/api`).
+- API address: `https://tanktutor.org/api`.
 - The device key comes from the tank page in TankTutor ("Device keys"). It is stored in the
   config entry and never logged.
 - Only the mapped sensors are sent: type, value, unit and time. No entity id, name or other metadata.

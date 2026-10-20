@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Connect a tank to TankTutor",
-        "description": "Create a device key for the tank in TankTutor (tank page, \"Device keys\") and paste it here. Use the staging URL only for tests.",
+        "description": "Create a device key for the tank in TankTutor (tank page, \"Device keys\") and paste it here.",
         "data": {
           "url": "API address",
           "key": "Device key"

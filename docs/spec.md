@@ -14,7 +14,7 @@ sender and diagnostics), direct integrations with single manufacturers.
 
 ## 2. Server contract (as implemented in 4.4.0)
 
-`POST https://tanktutor.org/api/devices/readings` (base URL configurable for staging)
+`POST https://tanktutor.org/api/devices/readings` (base URL configurable)
 
 - Auth: `Authorization: Bearer <device key>`; one key per tank, created by the user in TankTutor.
 - Body: `{"readings": [ ... ]}`, 1 to 60 entries.
@@ -126,11 +126,11 @@ repair issue naming the mapping (never the value of the key). A batch of one rea
   (each type, unit refusal, invert), queue (persistence, expiry, cap), sender (200, 400 bisect, 401, 403, 429
   with `Retry-After`, 5xx backoff, restart mid-backlog).
 - A fake TankTutor server in the tests mirrors the table in section 2.
-- Manual check against staging before every release: one temperature and one event.
+- Manual check on a real Home Assistant instance before every release: one temperature and one event.
 
 ## 7. Plan
 1. **Prototype** (issue step 3): config flow with key, options flow with a single `temperature` mapping,
-   sender with queue and `429`/`401` handling, against staging.
+   sender with queue and `429`/`401` handling, against a real instance.
 2. All types, `400` bisect, diagnostics, tests, README, `v0.1.0`.
 3. HACS custom-repository check (structure, `hacs.json`, brand icon, validation Actions), docs page in
    TankTutor, only then the public Home Assistant page and SEO (issue step 5).
