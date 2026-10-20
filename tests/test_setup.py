@@ -130,3 +130,128 @@ async def test_a_reading_not_yet_queued_survives_a_restart(hass, aioclient_mock,
     await hass.async_block_till_done()
     stored = next(v for k, v in hass_storage.items() if k.startswith("tanktutor"))
     assert stored["data"]["readings"][0]["value"] == 24.5
+
+
+# --- all types -------------------------------------------------------------------------------
+
+ALL_OPTIONS = {
+    CONF_TEMPERATURE_ENTITY: SENSOR,
+    "ambient_temperature_entity": "sensor.room",
+    "ambient_humidity_entity": "sensor.humidity",
+    "ph_entity": "sensor.ph",
+    "conductivity_entity": "sensor.ec",
+    "salinity_entity": "sensor.salinity",
+    "salinity_unit": "ppt",
+    "ammonia_entity": "sensor.nh3",
+    "ammonia_basis": "free",
+}
+
+
+async def setup_with(hass, aioclient_mock, options, status=200):
+    aioclient_mock.post(ENDPOINT, json={"saved": 1}, status=status)
+    entry = MockConfigEntry(domain=DOMAIN, data={CONF_URL: URL, CONF_KEY: KEY}, options=options)
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    return entry
+
+
+async def test_every_mapped_type_goes_out_in_one_batch(hass, aioclient_mock):
+    await setup_with(hass, aioclient_mock, ALL_OPTIONS)
+    hass.states.async_set(SENSOR, "24.5", {"unit_of_measurement": "°C"})
+    hass.states.async_set("sensor.room", "22", {"unit_of_measurement": "°C"})
+    hass.states.async_set("sensor.humidity", "55", {"unit_of_measurement": "%"})
+    hass.states.async_set("sensor.ph", "7.4")
+    hass.states.async_set("sensor.ec", "1.2", {"unit_of_measurement": "mS/cm"})
+    hass.states.async_set("sensor.salinity", "35", {"unit_of_measurement": "ppt"})
+    hass.states.async_set("sensor.nh3", "0.01", {"unit_of_measurement": "mg/L"})
+    await hass.async_block_till_done()
+    await tick(hass)
+    (body,) = sent_readings(aioclient_mock)
+    by_type = {r["type"]: r for r in body["readings"]}
+    assert set(by_type) == {
+        "temperature", "ambient_temperature", "ambient_humidity", "ph",
+        "conductivity", "salinity", "ammonia",
+    }
+    assert by_type["conductivity"]["value"] == pytest.approx(1200.0)
+    assert by_type["salinity"]["unit"] == "ppt"
+    assert by_type["ammonia"]["basis"] == "free"
+    dumped = json.dumps(body)
+    assert "sensor." not in dumped
+
+
+async def test_a_state_present_at_startup_is_sent(hass, aioclient_mock):
+    hass.states.async_set("sensor.ph", "7.2")
+    await setup_with(hass, aioclient_mock, {"ph_entity": "sensor.ph"})
+    await tick(hass)
+    (body,) = sent_readings(aioclient_mock)
+    assert body["readings"][0]["value"] == 7.2
+
+
+# --- events ---------------------------------------------------------------------------------------
+
+LEAK = {"events": [{"entity": "binary_sensor.leak", "name": "leak", "invert": False}]}
+
+
+async def test_an_active_event_is_sent_at_once_without_waiting_for_the_tick(hass, aioclient_mock):
+    await setup_with(hass, aioclient_mock, LEAK)
+    hass.states.async_set("binary_sensor.leak", "on")
+    await hass.async_block_till_done()
+    (body,) = sent_readings(aioclient_mock)
+    assert body["readings"][0]["type"] == "event"
+    assert body["readings"][0]["name"] == "leak"
+    assert body["readings"][0]["value"] == 1.0
+
+
+async def test_an_event_going_back_to_normal_waits_for_the_tick(hass, aioclient_mock):
+    await setup_with(hass, aioclient_mock, LEAK)
+    hass.states.async_set("binary_sensor.leak", "off")
+    await hass.async_block_till_done()
+    assert sent_readings(aioclient_mock) == []
+    await tick(hass)
+    assert sent_readings(aioclient_mock)[0]["readings"][0]["value"] == 0.0
+
+
+async def test_an_inverted_event_is_active_when_the_sensor_is_off(hass, aioclient_mock):
+    options = {"events": [{"entity": "binary_sensor.float", "name": "level_low", "invert": True}]}
+    await setup_with(hass, aioclient_mock, options)
+    hass.states.async_set("binary_sensor.float", "off")
+    await hass.async_block_till_done()
+    assert sent_readings(aioclient_mock)[0]["readings"][0]["value"] == 1.0
+
+
+async def test_a_repeated_event_state_is_collapsed(hass, aioclient_mock):
+    await setup_with(hass, aioclient_mock, LEAK)
+    hass.states.async_set("binary_sensor.leak", "on", {"attempt": 1})
+    await hass.async_block_till_done()
+    hass.states.async_set("binary_sensor.leak", "on", {"attempt": 2})
+    await hass.async_block_till_done()
+    await tick(hass)
+    readings = [r for body in sent_readings(aioclient_mock) for r in body["readings"]]
+    assert len(readings) == 1
+
+
+async def test_events_in_the_same_moment_share_one_request(hass, aioclient_mock):
+    options = {
+        "events": [
+            {"entity": "binary_sensor.leak", "name": "leak", "invert": False},
+            {"entity": "binary_sensor.high", "name": "level_high", "invert": False},
+        ]
+    }
+    await setup_with(hass, aioclient_mock, options)
+    hass.states.async_set("binary_sensor.leak", "on")
+    hass.states.async_set("binary_sensor.high", "on")
+    await hass.async_block_till_done()
+    bodies = sent_readings(aioclient_mock)
+    assert len(bodies) == 1
+    assert {r["name"] for r in bodies[0]["readings"]} == {"leak", "level_high"}
+
+
+async def test_an_event_does_not_break_the_five_minute_window(hass, aioclient_mock):
+    await setup_with(hass, aioclient_mock, LEAK)
+    hass.states.async_set("binary_sensor.leak", "on")
+    await hass.async_block_till_done()
+    hass.states.async_set("binary_sensor.leak", "off")
+    hass.states.async_set("binary_sensor.leak", "on")
+    await hass.async_block_till_done()
+    assert len(sent_readings(aioclient_mock)) == 1  # the second one waits for the next window

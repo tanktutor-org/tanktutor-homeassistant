@@ -1,0 +1,83 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Collega una vasca a TankTutor",
+        "description": "Crea una chiave device per la vasca in TankTutor (pagina della vasca, «Chiavi device») e incollala qui. Usa l'indirizzo di staging solo per le prove.",
+        "data": {
+          "url": "Indirizzo dell'API",
+          "key": "Chiave device"
+        },
+        "data_description": {
+          "url": "Dove si trova l'API di TankTutor, termina con /api.",
+          "key": "Inizia con ttk_. Viene mostrata una sola volta, alla creazione."
+        }
+      },
+      "reauth_confirm": {
+        "title": "TankTutor ha rifiutato la chiave device",
+        "description": "La chiave è stata revocata o non è più valida. Creane una nuova in TankTutor e incollala qui.",
+        "data": {
+          "key": "Chiave device"
+        }
+      }
+    },
+    "error": {
+      "invalid_url": "L'indirizzo deve iniziare con https:// (o http:// per una prova locale).",
+      "invalid_key": "Non sembra una chiave device di TankTutor (inizia con ttk_)."
+    },
+    "abort": {
+      "already_configured": "Questa chiave device è già configurata.",
+      "reauth_successful": "La nuova chiave device è stata salvata."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Sensori da inviare a TankTutor",
+        "description": "Vengono inviati solo i sensori scelti qui: tipo, valore, unità e ora. Nient'altro lascia Home Assistant. Lascia vuoto un campo per smettere di inviarlo.",
+        "data": {
+          "temperature_entity": "Temperatura dell'acqua",
+          "ambient_temperature_entity": "Temperatura dell'aria",
+          "ambient_humidity_entity": "Umidità dell'aria",
+          "ph_entity": "pH",
+          "conductivity_entity": "Conducibilità",
+          "salinity_entity": "Salinità o densità",
+          "salinity_unit": "Unità della salinità",
+          "ammonia_entity": "Ammoniaca",
+          "ammonia_basis": "L'ammoniaca è misurata come"
+        },
+        "data_description": {
+          "conductivity_entity": "Servono µS/cm, mS/cm o S/cm.",
+          "salinity_entity": "Solo vasche marine e salmastre.",
+          "salinity_unit": "ppt, oppure SG per una densità. Non viene mai dedotta dal valore.",
+          "ammonia_entity": "Servono mg/L o ppm.",
+          "ammonia_basis": "libera = NH3 come la misura un sensore; totale = un test a reagenti (NH3 + NH4)."
+        }
+      },
+      "events": {
+        "title": "Eventi: perdita, livello e altri",
+        "description": "Un sensore acceso/spento. Un evento attivo parte subito e TankTutor può avvisarti via email. Togli la spunta per rimuovere un evento, oppure aggiungine uno nuovo qui sotto e conferma; lascia vuoti i campi nuovi per finire.",
+        "data": {
+          "keep": "Eventi da mantenere",
+          "new_entity": "Nuovo evento: sensore",
+          "new_name": "Nuovo evento: nome",
+          "new_invert": "Attivo quando il sensore è spento"
+        },
+        "data_description": {
+          "new_name": "leak, level_low, level_high, oppure un nome tuo (a-z, 0-9, _; al massimo 10 nomi tuoi per vasca).",
+          "new_invert": "Per i galleggianti chiusi quando il livello è a posto."
+        }
+      }
+    },
+    "error": {
+      "salinity_unit_required": "Scegli l'unità del sensore di salinità.",
+      "ammonia_basis_required": "Indica se il valore dell'ammoniaca è libero o totale.",
+      "event_entity_required": "Scegli il sensore del nuovo evento.",
+      "event_name_required": "Dai un nome al nuovo evento.",
+      "invalid_event_name": "Usa solo a-z, 0-9 e _, al massimo 40 caratteri.",
+      "event_name_in_use": "Questo nome di evento è già usato su questa vasca.",
+      "event_entity_in_use": "Questo sensore è già usato da un altro evento.",
+      "too_many_custom_events": "Una vasca può avere al massimo 10 eventi con nome proprio."
+    }
+  }
+}
