@@ -37,6 +37,12 @@ uv pip install --python .venv/bin/python -r requirements_test.txt
 - Batching and offline queue, within the TankTutor limit of one request every 5 minutes per user.
 - Distribution through HACS as a custom repository.
 
+## Icon
+
+`custom_components/tanktutor/brand/icon.png` (256 px) and `icon@2x.png` (512 px) are the TankTutor
+mark from the website header; the vector source is `assets/icon.svg`. Home Assistant 2026.3 and later
+reads brand images from the integration's own `brand/` folder. No Home Assistant artwork is used.
+
 ## Disclaimer
 
 This project is not affiliated with, endorsed by or sponsored by Nabu Casa or the
