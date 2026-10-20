@@ -4,7 +4,10 @@
       "user": {
         "title": "Connect a tank to TankTutor",
         "description": "Create a device key for the tank in TankTutor (tank page, \"Device keys\") and paste it here. Use the staging URL only for tests.",
-        "data": { "url": "API address", "key": "Device key" },
+        "data": {
+          "url": "API address",
+          "key": "Device key"
+        },
         "data_description": {
           "url": "Where TankTutor's API lives, ending with /api.",
           "key": "Starts with ttk_. It is shown only once, when you create it."
@@ -13,7 +16,9 @@
       "reauth_confirm": {
         "title": "TankTutor rejected the device key",
         "description": "The key was revoked or is no longer valid. Create a new one in TankTutor and paste it here.",
-        "data": { "key": "Device key" }
+        "data": {
+          "key": "Device key"
+        }
       }
     },
     "error": {
@@ -29,9 +34,50 @@
     "step": {
       "init": {
         "title": "Sensors to send to TankTutor",
-        "description": "Only the sensors you choose here are sent. Nothing else leaves Home Assistant.",
-        "data": { "temperature_entity": "Water temperature sensor" }
+        "description": "Only the sensors you choose here are sent: type, value, unit and time. Nothing else leaves Home Assistant. Leave a field empty to stop sending it.",
+        "data": {
+          "temperature_entity": "Water temperature",
+          "ambient_temperature_entity": "Air temperature",
+          "ambient_humidity_entity": "Air humidity",
+          "ph_entity": "pH",
+          "conductivity_entity": "Conductivity",
+          "salinity_entity": "Salinity or density",
+          "salinity_unit": "Salinity unit",
+          "ammonia_entity": "Ammonia",
+          "ammonia_basis": "Ammonia is measured as"
+        },
+        "data_description": {
+          "conductivity_entity": "Needs µS/cm, mS/cm or S/cm.",
+          "salinity_entity": "Marine and brackish tanks only.",
+          "salinity_unit": "ppt, or SG for a specific gravity. It is never guessed from the value.",
+          "ammonia_entity": "Needs mg/L or ppm.",
+          "ammonia_basis": "free = NH3 as a sensor measures it; total = a test kit (NH3 + NH4)."
+        }
+      },
+      "events": {
+        "title": "Events: leak, level and others",
+        "description": "A sensor that is on or off. An active event is sent at once and TankTutor can email you. Untick an event to remove it, or add a new one below and submit; leave the new fields empty to finish.",
+        "data": {
+          "keep": "Events to keep",
+          "new_entity": "New event: sensor",
+          "new_name": "New event: name",
+          "new_invert": "Active when the sensor is off"
+        },
+        "data_description": {
+          "new_name": "leak, level_low, level_high, or your own name (a-z, 0-9, _; at most 10 own names per tank).",
+          "new_invert": "For floats that are closed when the level is fine."
+        }
       }
+    },
+    "error": {
+      "salinity_unit_required": "Choose the unit of the salinity sensor.",
+      "ammonia_basis_required": "Say whether the ammonia value is free or total.",
+      "event_entity_required": "Choose the sensor of the new event.",
+      "event_name_required": "Give the new event a name.",
+      "invalid_event_name": "Use only a-z, 0-9 and _, at most 40 characters.",
+      "event_name_in_use": "This event name is already used on this tank.",
+      "event_entity_in_use": "This sensor is already used by another event.",
+      "too_many_custom_events": "A tank can have at most 10 events with their own names."
     }
   }
 }

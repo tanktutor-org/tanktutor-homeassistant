@@ -23,6 +23,7 @@ class Reading:
     measured_at: datetime
     unit: str | None = None
     name: str | None = None
+    basis: str | None = None
 
     @property
     def identity(self) -> tuple[str, str | None, datetime]:
@@ -38,6 +39,8 @@ class Reading:
             payload["unit"] = self.unit
         if self.name is not None:
             payload["name"] = self.name
+        if self.basis is not None:
+            payload["basis"] = self.basis
         return payload
 
     def to_dict(self) -> dict[str, Any]:
@@ -55,6 +58,7 @@ class Reading:
                 measured_at=measured_at,
                 unit=data.get("unit"),
                 name=data.get("name"),
+                basis=data.get("basis"),
             )
         except (KeyError, TypeError, ValueError, AttributeError):
             return None

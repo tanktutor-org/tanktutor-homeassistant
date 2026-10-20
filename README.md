@@ -9,14 +9,18 @@ Custom integration that sends the aquarium sensors you already have in Home Assi
 
 ## Prototype (0.1.0, unreleased)
 
-Water temperature only: one sensor, sent to TankTutor with a persistent queue, the
-5-minute rate limit, `429`/`401`/`5xx` handling and reauth. The other types are described
-in [docs/spec.md](docs/spec.md).
+All the types the TankTutor API accepts, each mapped explicitly in the integration options:
+water and air temperature, air humidity, pH, conductivity, salinity (ppt or SG), ammonia (free or
+total) and on/off events (leak, level, your own names, optional inversion). It sends with a
+persistent queue, the 5-minute rate limit, `429`/`401`/`403`/`5xx` handling and reauth.
+Details and rules: [docs/spec.md](docs/spec.md).
 
 - API address: `https://tanktutor.org/api` (staging: `https://tanktutor-stag.bitsofdream.it/api`).
 - The device key comes from the tank page in TankTutor ("Device keys"). It is stored in the
   config entry and never logged.
-- Only the mapped sensor is sent: type, value, unit and time. No entity id, name or other metadata.
+- Only the mapped sensors are sent: type, value, unit and time. No entity id, name or other metadata.
+- An unusable state (unknown, unavailable, not a number, a unit that cannot be trusted) is never sent.
+- Tested only against a fake server so far; not yet tried on a real Home Assistant instance.
 
 ### Tests
 

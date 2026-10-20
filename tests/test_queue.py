@@ -104,3 +104,14 @@ def test_round_trip_through_storage_format():
 def test_from_dict_ignores_malformed_entries():
     restored = ReadingQueue.from_dict({"readings": [{"type": "temperature"}, "junk"]})
     assert len(restored) == 0
+
+
+def test_basis_is_part_of_the_payload_and_survives_storage():
+    reading = Reading(type="ammonia", value=0.02, basis="free", measured_at=NOW)
+    assert reading.to_payload()["basis"] == "free"
+    restored = ReadingQueue.from_dict({"readings": [reading.to_dict()]}).next_batch(NOW)[0]
+    assert restored.basis == "free"
+
+
+def test_basis_is_omitted_when_not_set():
+    assert "basis" not in temp(24.0).to_payload()
