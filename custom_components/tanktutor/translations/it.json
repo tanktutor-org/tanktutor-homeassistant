@@ -23,7 +23,10 @@
     },
     "error": {
       "invalid_url": "L'indirizzo deve iniziare con https:// (o http:// per una prova locale).",
-      "invalid_key": "Non sembra una chiave device di TankTutor (inizia con ttk_)."
+      "invalid_key": "Non sembra una chiave device di TankTutor (inizia con ttk_).",
+      "invalid_auth": "TankTutor non accetta questa chiave. Potrebbe essere revocata o di un altro server.",
+      "cannot_connect": "Impossibile raggiungere TankTutor a questo indirizzo. Controlla l'indirizzo e la connessione.",
+      "account_suspended": "Questo account TankTutor è sospeso."
     },
     "abort": {
       "already_configured": "Questa chiave device è già configurata.",

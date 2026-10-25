@@ -9,6 +9,7 @@ from typing import Any
 import voluptuous as vol
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFlowWithReload
 from homeassistant.core import callback
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
     EntitySelector,
     EntitySelectorConfig,
@@ -19,6 +20,7 @@ from homeassistant.helpers.selector import (
     TextSelectorType,
 )
 
+from .client import AuthError, ServerError, Suspended, get_device_info
 from .const import (
     AMMONIA_BASES,
     BUILTIN_EVENTS,
@@ -59,9 +61,19 @@ class TankTutorConfigFlow(ConfigFlow, domain=DOMAIN):
             else:
                 await self.async_set_unique_id(_unique_id(key))
                 self._abort_if_unique_id_configured()
-                return self.async_create_entry(
-                    title=f"TankTutor ({key[:8]}…)", data={CONF_URL: url, CONF_KEY: key}
-                )
+                name = key[:8] + "…"
+                try:
+                    info = await get_device_info(async_get_clientsession(self.hass), url, key)
+                except AuthError:
+                    errors[CONF_KEY] = "invalid_auth"
+                except Suspended:
+                    errors["base"] = "account_suspended"
+                except ServerError:
+                    errors[CONF_URL] = "cannot_connect"
+                else:
+                    if info is not None:
+                        name = info.tank_name
+                    return self.async_create_entry(title=f"TankTutor ({name})", data={CONF_URL: url, CONF_KEY: key})
         schema = vol.Schema(
             {
                 vol.Required(CONF_URL, default=DEFAULT_URL): str,
@@ -77,11 +89,20 @@ class TankTutorConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
         if user_input is not None:
             key = user_input[CONF_KEY].strip()
-            if KEY_RE.match(key):
-                return self.async_update_reload_and_abort(
-                    self._get_reauth_entry(), data_updates={CONF_KEY: key}
-                )
-            errors[CONF_KEY] = "invalid_key"
+            entry = self._get_reauth_entry()
+            if not KEY_RE.match(key):
+                errors[CONF_KEY] = "invalid_key"
+            else:
+                try:
+                    await get_device_info(async_get_clientsession(self.hass), entry.data[CONF_URL], key)
+                except AuthError:
+                    errors[CONF_KEY] = "invalid_auth"
+                except Suspended:
+                    errors["base"] = "account_suspended"
+                except ServerError:
+                    errors["base"] = "cannot_connect"
+                else:
+                    return self.async_update_reload_and_abort(entry, data_updates={CONF_KEY: key})
         return self.async_show_form(
             step_id="reauth_confirm",
             data_schema=vol.Schema({vol.Required(CONF_KEY): KEY_SELECTOR}),

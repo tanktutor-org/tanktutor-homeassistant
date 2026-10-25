@@ -12,6 +12,7 @@ from custom_components.tanktutor.client import (
     RateLimited,
     ServerError,
     Suspended,
+    get_device_info,
     post_readings,
 )
 from custom_components.tanktutor.queue import Reading
@@ -113,3 +114,62 @@ async def test_base_url_trailing_slash_is_tolerated(allow_sockets, aiohttp_serve
 
     base = await serve(aiohttp_server, handler)
     assert (await post_readings(session, base.rstrip("/") + "/", "k", [READING])).saved == 1
+
+
+async def serve_me(aiohttp_server, handler):
+    app = web.Application()
+    app.router.add_get("/devices/me", handler)
+    server = await aiohttp_server(app)
+    return str(server.make_url(""))
+
+
+async def test_device_info_sends_the_key_and_reads_the_tank(allow_sockets, aiohttp_server, session):
+    seen = {}
+
+    async def handler(request):
+        seen["auth"] = request.headers.get("Authorization")
+        return web.json_response({"tankName": "Reef 200", "waterType": "marine"})
+
+    base = await serve_me(aiohttp_server, handler)
+    info = await get_device_info(session, base, "ttk_secret")
+    assert info.tank_name == "Reef 200"
+    assert info.water_type == "marine"
+    assert seen["auth"] == "Bearer ttk_secret"
+
+
+async def test_device_info_401_is_an_auth_error(allow_sockets, aiohttp_server, session):
+    async def handler(request):
+        return web.json_response({"error": "invalid_device_key"}, status=401)
+
+    base = await serve_me(aiohttp_server, handler)
+    with pytest.raises(AuthError):
+        await get_device_info(session, base, "ttk_secret")
+
+
+async def test_device_info_403_is_a_suspended_account(allow_sockets, aiohttp_server, session):
+    async def handler(request):
+        return web.json_response({"error": "account_suspended"}, status=403)
+
+    base = await serve_me(aiohttp_server, handler)
+    with pytest.raises(Suspended):
+        await get_device_info(session, base, "ttk_secret")
+
+
+async def test_device_info_is_none_on_a_server_without_the_endpoint(allow_sockets, aiohttp_server, session):
+    app = web.Application()
+    server = await aiohttp_server(app)  # no /devices/me route: 404
+    assert await get_device_info(session, str(server.make_url("")), "ttk_secret") is None
+
+
+async def test_device_info_5xx_is_a_server_error(allow_sockets, aiohttp_server, session):
+    async def handler(request):
+        return web.Response(status=503)
+
+    base = await serve_me(aiohttp_server, handler)
+    with pytest.raises(ServerError):
+        await get_device_info(session, base, "ttk_secret")
+
+
+async def test_device_info_unreachable_server_is_a_server_error(allow_sockets, session):
+    with pytest.raises(ServerError):
+        await get_device_info(session, "http://127.0.0.1:1", "ttk_secret")

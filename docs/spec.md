@@ -64,12 +64,13 @@ Windows are **fixed and aligned to the clock** (multiples of 5 minutes since the
 ### 4.1 Config flow
 1. `user`: base URL (default production) and device key. The key is stored in the config entry data;
    it is never logged.
-2. Validation: **open point** — the API has no side-effect-free endpoint to check a key, and a `POST`
-   needs at least one valid reading and consumes the rate-limit window. Proposal for TankTutor:
-   `GET /devices/me` → `{"tankName": "...", "waterType": "..."}`, no rate limit. Until it exists the flow
-   only checks the key format and defers the first check to the first send (a `401` then triggers reauth).
+2. Validation: `GET /devices/me` (TankTutor 4.5.0) answers `{"tankName", "waterType"}` without side effects
+   and without using the rate-limit window. `401` → "key not accepted" (stays on the form), `403` →
+   suspended account, network error or `5xx` → "cannot reach TankTutor". A server without the endpoint
+   (`404`) does not block the setup: the key is then checked at the first send, as before. The tank name
+   becomes the title of the entry.
 3. `unique_id`: SHA-256 prefix of the key (the key itself must not be the id).
-4. `reauth`: asks for a new key.
+4. `reauth`: asks for a new key and checks it the same way before saving it.
 
 ### 4.2 Options flow (the mapping)
 Zero or more mappings, each: source entity → TankTutor type.
@@ -136,7 +137,7 @@ repair issue naming the mapping (never the value of the key). A batch of one rea
    TankTutor, only then the public Home Assistant page and SEO (issue step 5).
 
 ## 8. Open points
-1. `GET /devices/me` on the TankTutor side (4.2) — needs an issue; without it the key is checked at first send.
+1. ~~`GET /devices/me`~~ — done in TankTutor 4.5.0 (issue #69) and used by the config flow.
 2. Brand icon (`brand/icon.png`) for HACS: no HA or Nabu Casa logo; TankTutor logo only.
 3. Minimum HA version (decide when the prototype runs on a real instance).
 4. Whether the options flow also offers an optional "send interval" (default 5 min, never below the server limit).

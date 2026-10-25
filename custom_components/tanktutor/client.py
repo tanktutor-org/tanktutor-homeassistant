@@ -1,4 +1,4 @@
-"""HTTP client for POST /devices/readings (contract: docs/spec.md, section 2)."""
+"""HTTP client for POST /devices/readings and GET /devices/me (contract: docs/spec.md, section 2)."""
 
 from __future__ import annotations
 
@@ -43,6 +43,33 @@ class ServerError(TankTutorError):
 class PostResult:
     saved: int
     ignored: int
+
+
+@dataclass(frozen=True)
+class DeviceInfo:
+    tank_name: str
+    water_type: str
+
+
+async def get_device_info(session: aiohttp.ClientSession, base_url: str, key: str) -> DeviceInfo | None:
+    """Check a key without side effects. None = the server has no such endpoint (older TankTutor)."""
+    url = f"{base_url.rstrip('/')}/devices/me"
+    try:
+        async with session.get(
+            url, headers={"Authorization": f"Bearer {key}"}, timeout=REQUEST_TIMEOUT
+        ) as response:
+            if response.status == 200:
+                data = await response.json()
+                return DeviceInfo(tank_name=str(data["tankName"]), water_type=str(data["waterType"]))
+            if response.status == 401:
+                raise AuthError
+            if response.status == 403:
+                raise Suspended
+            if response.status == 404:
+                return None
+            raise ServerError(f"unexpected status {response.status}")
+    except (aiohttp.ClientError, TimeoutError, ValueError, KeyError) as err:
+        raise ServerError(str(err)) from err
 
 
 async def post_readings(

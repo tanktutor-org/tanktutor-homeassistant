@@ -1,10 +1,13 @@
 """Config flow, options flow and reauth."""
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
 from homeassistant import config_entries
 from homeassistant.data_entry_flow import FlowResultType
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.tanktutor.client import AuthError, DeviceInfo, ServerError, Suspended
 from custom_components.tanktutor.const import (
     CONF_KEY,
     CONF_TEMPERATURE_ENTITY,
@@ -14,6 +17,16 @@ from custom_components.tanktutor.const import (
 
 KEY = "ttk_" + "a" * 32
 URL = "https://tanktutor.test/api"
+
+
+INFO = DeviceInfo(tank_name="Reef 200", water_type="marine")
+
+
+@pytest.fixture(autouse=True)
+def device_info():
+    """The key check calls GET /devices/me; every test controls the answer."""
+    with patch("custom_components.tanktutor.config_flow.get_device_info", AsyncMock(return_value=INFO)) as mock:
+        yield mock
 
 
 async def start(hass):
@@ -222,3 +235,50 @@ async def test_builtin_names_do_not_count_against_the_custom_limit(hass):
     result = await submit(hass, result, {})
     result = await add_event(hass, result, "binary_sensor.l", "leak")
     assert not result.get("errors")
+
+
+async def test_the_tank_name_titles_the_entry(hass):
+    result = await start(hass)
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_URL: URL, CONF_KEY: KEY})
+    assert result["title"] == "TankTutor (Reef 200)"
+
+
+async def test_a_rejected_key_stays_on_the_form(hass, device_info):
+    device_info.side_effect = AuthError
+    result = await start(hass)
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_URL: URL, CONF_KEY: KEY})
+    assert result["type"] == FlowResultType.FORM
+    assert result["errors"] == {CONF_KEY: "invalid_auth"}
+
+
+async def test_a_suspended_account_is_reported(hass, device_info):
+    device_info.side_effect = Suspended
+    result = await start(hass)
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_URL: URL, CONF_KEY: KEY})
+    assert result["errors"] == {"base": "account_suspended"}
+
+
+async def test_an_unreachable_server_is_reported(hass, device_info):
+    device_info.side_effect = ServerError("boom")
+    result = await start(hass)
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_URL: URL, CONF_KEY: KEY})
+    assert result["errors"] == {CONF_URL: "cannot_connect"}
+
+
+async def test_a_server_without_the_endpoint_does_not_block_the_setup(hass, device_info):
+    device_info.return_value = None
+    result = await start(hass)
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_URL: URL, CONF_KEY: KEY})
+    assert result["type"] == FlowResultType.CREATE_ENTRY
+    assert result["title"].startswith("TankTutor (")
+
+
+async def test_reauth_refuses_a_key_the_server_rejects(hass, device_info):
+    entry = MockConfigEntry(domain=DOMAIN, data={CONF_URL: URL, CONF_KEY: KEY})
+    entry.add_to_hass(hass)
+    result = await entry.start_reauth_flow(hass)
+    device_info.side_effect = AuthError
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_KEY: "ttk_" + "c" * 32})
+    assert result["type"] == FlowResultType.FORM
+    assert result["errors"] == {CONF_KEY: "invalid_auth"}
+    assert entry.data[CONF_KEY] == KEY

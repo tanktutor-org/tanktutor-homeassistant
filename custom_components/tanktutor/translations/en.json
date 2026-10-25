@@ -23,7 +23,10 @@
     },
     "error": {
       "invalid_url": "The address must start with https:// (or http:// for a local test).",
-      "invalid_key": "That does not look like a TankTutor device key (it starts with ttk_)."
+      "invalid_key": "That does not look like a TankTutor device key (it starts with ttk_).",
+      "invalid_auth": "TankTutor does not accept this key. It may be revoked or belong to another server.",
+      "cannot_connect": "Cannot reach TankTutor at this address. Check the address and your connection.",
+      "account_suspended": "This TankTutor account is suspended."
     },
     "abort": {
       "already_configured": "This device key is already set up.",
