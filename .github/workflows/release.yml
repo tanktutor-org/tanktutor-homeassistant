@@ -1,0 +1,63 @@
+name: Release
+
+# Creates the GitHub release for a version tag (HACS shows versions from releases).
+# A tag pushed from the Gitea mirror starts it; for a tag that already exists, run it by hand
+# (Actions > Release > Run workflow) and give the tag.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to release, for example v0.1.0"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: GitHub release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve the tag
+        id: tag
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          TAG="${INPUT_TAG:-$GITHUB_REF_NAME}"
+          case "$TAG" in
+            v[0-9]*.[0-9]*.[0-9]*) ;;
+            *) echo "Not a version tag: $TAG"; exit 1 ;;
+          esac
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ steps.tag.outputs.tag }}
+
+      - name: The tag must match the integration version
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          VERSION=$(python3 -c "import json;print(json.load(open('custom_components/tanktutor/manifest.json'))['version'])")
+          if [ "v$VERSION" != "$TAG" ]; then
+            echo "Tag $TAG does not match manifest.json version $VERSION"
+            exit 1
+          fi
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists, nothing to do"
+            exit 0
+          fi
+          gh release create "$TAG" \
+            --title "${TAG#v}" \
+            --verify-tag \
+            --generate-notes \
+            --notes "Install through HACS as a custom repository (type Integration); see the README for the steps."
