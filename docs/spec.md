@@ -1,6 +1,6 @@
 # TankTutor for Home Assistant — short specification
 
-Status: draft for review (2026-10-20). Tracks TankTutor issue #68.
+Status: implemented in 0.1.0 (2026-10-26); open points below. Tracks TankTutor issue #68.
 Source of truth for the server side: `POST /devices/readings` in the TankTutor API (4.4.0),
 `apps/api/src/devices/ingestRoutes.ts`. This document describes only what the integration
 does with it; if the API changes, the API wins.
