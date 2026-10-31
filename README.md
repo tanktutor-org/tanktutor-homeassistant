@@ -26,16 +26,20 @@ total) and on/off events (leak, level, your own names, optional inversion). It s
 persistent queue, the 5-minute rate limit, `429`/`401`/`403`/`5xx` handling and reauth.
 Details and rules: [docs/spec.md](docs/spec.md).
 
+- Requires Home Assistant 2026.3.0 or later (`hacs.json`; the integration ships its icon in `brand/`).
 - API address: `https://tanktutor.org/api`.
 - The device key comes from the tank page in TankTutor ("Device keys"). It is stored in the
   config entry and never logged.
 - Only the mapped sensors are sent: type, value, unit and time. No entity id, name or other metadata.
 - An unusable state (unknown, unavailable, not a number, a unit that cannot be trusted) is never sent.
 - The key is checked when you add it (`GET /devices/me`, no side effects): a wrong or revoked key is refused on the spot and the entry is titled with the tank name.
-- Tested with a fake server (automated tests) and, by hand, on a real Home Assistant (2026.10) against
-  TankTutor's staging: temperature, pH, conductivity, ammonia, salinity, air and a leak event; a wrong
-  key, a second tank, a duplicate key, a revoked key (reauth), salinity on a freshwater tank (ignored)
-  and the icon. The offline queue is covered by the automated tests only, not yet tried by hand.
+- Tested with a fake server (automated tests) and, by hand, on a real Home Assistant (2026.10)
+  against a TankTutor instance: temperature, pH, conductivity, ammonia, salinity, air and a leak
+  event; a wrong key, a second tank, a duplicate key, a revoked key (reauth), salinity on a freshwater
+  tank (ignored) and the icon.
+- **Not tried by hand:** the offline queue (sending after a network outage) and installing from HACS
+  on a real instance. Both are covered by the automated tests only.
+- After a restart, an event whose state did not change (e.g. "leak off") is not sent again.
 
 ### Tests
 
@@ -47,8 +51,8 @@ uv pip install --python .venv/bin/python -r requirements_test.txt
 
 ## Not yet
 
-- Listing in the default HACS store and a minimum Home Assistant version (spec, open point).
-- Trying the offline queue by hand on a real instance.
+- Listing in the default HACS store.
+- Trying the offline queue and the HACS install by hand on a real instance.
 
 ## Icon
 

@@ -26,7 +26,8 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     store: Store = Store(hass, STORAGE_VERSION, f"{DOMAIN}.{entry.entry_id}")
-    queue = ReadingQueue.from_dict(await store.async_load() or {})
+    saved = await store.async_load() or {}
+    queue = ReadingQueue.from_dict(saved)
     collector = Collector()
     session = async_get_clientsession(hass)
     lock = asyncio.Lock()  # a tick and an urgent flush must never send the same batch twice
@@ -44,13 +45,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             except AuthError:
                 _LOGGER.warning("TankTutor rejected the device key; asking for a new one")
                 entry.async_start_reauth(hass)
-            await store.async_save(queue.to_dict())
+            await store.async_save(snapshot())
 
     mappings = build_mappings(dict(entry.options))
     by_entity: dict[str, list[Mapping]] = defaultdict(list)
     for mapping in mappings:
         by_entity[mapping.entity_id].append(mapping)
-    last_event: dict[str, float] = {}
+    # Last state offered per event, kept across restarts: after a restart an unchanged event
+    # (e.g. "leak off") is not sent again, so it adds no line to the tank's log.
+    last_event: dict[str, float] = {
+        str(k): float(v) for k, v in (saved.get("events") or {}).items() if isinstance(v, (int, float))
+    }
+
+    def snapshot() -> dict:
+        return {**queue.to_dict(), "events": dict(last_event)}
 
     def offer(mapping: Mapping, state) -> bool:
         """Queue the reading for a state; True when it is an active event that should go out at once."""
@@ -87,7 +95,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     async def save_on_unload() -> None:
         collector.drain(dt_util.utcnow(), queue)
-        await store.async_save(queue.to_dict())
+        await store.async_save(snapshot())
 
     entry.async_on_unload(save_on_unload)
     return True

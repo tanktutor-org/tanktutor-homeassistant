@@ -255,3 +255,31 @@ async def test_an_event_does_not_break_the_five_minute_window(hass, aioclient_mo
     hass.states.async_set("binary_sensor.leak", "on")
     await hass.async_block_till_done()
     assert len(sent_readings(aioclient_mock)) == 1  # the second one waits for the next window
+
+
+async def test_an_unchanged_event_is_not_sent_again_after_a_restart(hass, aioclient_mock):
+    entry = await setup_with(hass, aioclient_mock, LEAK)
+    hass.states.async_set("binary_sensor.leak", "off")
+    await hass.async_block_till_done()
+    await tick(hass)
+    assert len(sent_readings(aioclient_mock)) == 1
+    await hass.config_entries.async_unload(entry.entry_id)
+    await hass.async_block_till_done()
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    await tick(hass, minutes=10)
+    assert len(sent_readings(aioclient_mock)) == 1  # the same "off" is not repeated
+
+
+async def test_an_event_that_changed_while_home_assistant_was_down_is_sent(hass, aioclient_mock):
+    entry = await setup_with(hass, aioclient_mock, LEAK)
+    hass.states.async_set("binary_sensor.leak", "off")
+    await hass.async_block_till_done()
+    await tick(hass)
+    await hass.config_entries.async_unload(entry.entry_id)
+    await hass.async_block_till_done()
+    hass.states.async_set("binary_sensor.leak", "on")
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    await tick(hass, minutes=10)
+    assert sent_readings(aioclient_mock)[-1]["readings"][0]["value"] == 1.0
