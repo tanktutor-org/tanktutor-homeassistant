@@ -139,5 +139,5 @@ repair issue naming the mapping (never the value of the key). A batch of one rea
 ## 8. Open points
 1. ~~`GET /devices/me`~~ — done in TankTutor 4.5.0 (issue #69) and used by the config flow.
 2. Brand icon (`brand/icon.png`) for HACS: no HA or Nabu Casa logo; TankTutor logo only.
-3. Minimum HA version (decide when the prototype runs on a real instance).
+3. ~~Minimum HA version~~ — 2026.3.0 (`hacs.json`): the `brand/` folder needs it; tried on 2026.10.
 4. Whether the options flow also offers an optional "send interval" (default 5 min, never below the server limit).

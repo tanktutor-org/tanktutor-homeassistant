@@ -102,7 +102,9 @@ class TankTutorConfigFlow(ConfigFlow, domain=DOMAIN):
                 except ServerError:
                     errors["base"] = "cannot_connect"
                 else:
-                    return self.async_update_reload_and_abort(entry, data_updates={CONF_KEY: key})
+                    return self.async_update_reload_and_abort(
+                        entry, unique_id=_unique_id(key), data_updates={CONF_KEY: key}
+                    )
         return self.async_show_form(
             step_id="reauth_confirm",
             data_schema=vol.Schema({vol.Required(CONF_KEY): KEY_SELECTOR}),

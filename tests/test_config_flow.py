@@ -7,6 +7,7 @@ from homeassistant import config_entries
 from homeassistant.data_entry_flow import FlowResultType
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.tanktutor.config_flow import _unique_id
 from custom_components.tanktutor.client import AuthError, DeviceInfo, ServerError, Suspended
 from custom_components.tanktutor.const import (
     CONF_KEY,
@@ -91,6 +92,7 @@ async def test_reauth_replaces_the_key(hass):
     assert result["type"] == FlowResultType.ABORT
     assert result["reason"] == "reauth_successful"
     assert entry.data[CONF_KEY] == new_key
+    assert entry.unique_id == _unique_id(new_key)
 
 
 # --- options flow: all sensors and events ---------------------------------------------------------
