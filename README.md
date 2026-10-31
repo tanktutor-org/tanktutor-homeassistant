@@ -4,7 +4,7 @@ Custom integration that sends the aquarium sensors you already have in Home Assi
 (temperature, pH, salinity, ammonia, air, leak and level events) to
 [TankTutor](https://tanktutor.org).
 
-> **Status: first release (0.1.0).** Installable through HACS as a custom repository (see below).
+> **Status: 0.1.1.** Installable through HACS as a custom repository (see below).
 > Early version: report problems in the issue tracker.
 
 ## Install
